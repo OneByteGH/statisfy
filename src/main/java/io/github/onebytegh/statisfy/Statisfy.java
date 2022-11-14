@@ -44,13 +44,13 @@ public class Statisfy {
 
         app.events(event -> {
             event.serverStarted(() -> {
-                statusWebhook.setContent(":green_circle:Server started!");
+                statusWebhook.setContent(":green_circle: Server started!");
                 statusWebhook.execute();
 
                 info("Server Started");
             });
             event.serverStopped(() -> {
-                statusWebhook.setContent(":red_circle:Server stopped!");
+                statusWebhook.setContent(":red_circle: Server stopped!");
                 statusWebhook.execute();
 
                 error("Server Stopped");
