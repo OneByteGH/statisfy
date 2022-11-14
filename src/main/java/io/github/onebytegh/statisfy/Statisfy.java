@@ -46,22 +46,29 @@ public class Statisfy {
             event.serverStarted(() -> {
                 statusWebhook.setContent(":green_circle:Server started!");
                 statusWebhook.execute();
+
+                info("Server Started");
             });
             event.serverStopped(() -> {
                 statusWebhook.setContent(":red_circle:Server stopped!");
                 statusWebhook.execute();
+
+                error("Server Stopped");
             });
         });
 
 
+
+
+        app.start(6969);
     }
 
     public static void info(String msg) throws IOException {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
 
-        logger.info(dtf + " " + msg);
-        infoWebhook.setContent(dtf + " " + msg);
+        logger.info(dtf.format(now) + " " + msg);
+        infoWebhook.setContent(dtf.format(now) + " " + msg);
         infoWebhook.execute();
     }
 
@@ -69,8 +76,8 @@ public class Statisfy {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
 
-        logger.error(dtf + " " + msg);
-        errorWebhook.setContent(dtf + " " + msg);
+        logger.error(dtf.format(now) + " " + msg);
+        errorWebhook.setContent(dtf.format(now) + " " + msg);
         errorWebhook.execute();
     }
 }
