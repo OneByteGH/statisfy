@@ -16,6 +16,16 @@ public class Statisfy {
     public static DiscordWebhook errorWebhook;
     public static DiscordWebhook infoWebhook;
 
+
+    /**
+     * args:
+     * 0. IDK
+     * 1. Status Webhook Url
+     * 2. Error Webhook Url
+     * 3. Info Webhook Url
+     * 4. DB URL
+     * 5. DBUSER:DBPASS
+     */
     public static void main(String[] args) {
         //Logger Setup
         logger = LoggerFactory.getLogger(Statisfy.class);
@@ -56,8 +66,6 @@ public class Statisfy {
                 error("Server Stopped");
             });
         });
-
-
 
 
         app.start(6969);
