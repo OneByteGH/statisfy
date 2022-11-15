@@ -12,27 +12,37 @@ import java.time.format.DateTimeFormatter;
 public class Statisfy {
 
     public static Logger logger;
+    public static String spotifyApiUrl;
+
+    public static String spotifySecret;
+    public static String spotifyClientId;
+    public static String redirectUri;
     public static DiscordWebhook statusWebhook;
     public static DiscordWebhook errorWebhook;
     public static DiscordWebhook infoWebhook;
 
-
     /**
      * args:
-     * 0. IDK
-     * 1. Status Webhook Url
-     * 2. Error Webhook Url
-     * 3. Info Webhook Url
-     * 4. DB URL
-     * 5. DBUSER:DBPASS
+     * Spotify Secret
+     * Spotify Client Id
+     * Status Webhook Url
+     * Error Webhook Url
+     * Info Webhook Url
+     * DB URL
+     * DBUSER:DBPASS
      */
     public static void main(String[] args) {
         //Logger Setup
         logger = LoggerFactory.getLogger(Statisfy.class);
 
-        statusWebhook = new DiscordWebhook(args[1]);
-        errorWebhook = new DiscordWebhook(args[2]);
-        infoWebhook = new DiscordWebhook(args[3]);
+        spotifyApiUrl = "https://api.spotify.com/";
+
+        spotifySecret = args[0];
+        spotifyClientId = args[1];
+        redirectUri = args[2];
+        statusWebhook = new DiscordWebhook(args[3]);
+        errorWebhook = new DiscordWebhook(args[4]);
+        infoWebhook = new DiscordWebhook(args[5]);
 
         //Server Creation
         Javalin app = Javalin.create(config -> {
