@@ -1,7 +1,9 @@
 package io.github.onebytegh.statisfy.database;
 
+import java.sql.SQLException;
+
 public class DBUtil {
-    public void setupDB() {
+    public static void setupDB() throws SQLException {
 
     }
 }

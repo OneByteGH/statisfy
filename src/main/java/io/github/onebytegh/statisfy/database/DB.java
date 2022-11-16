@@ -7,11 +7,8 @@ import java.sql.*;
 public class DB {
     private final Connection con;
 
-    public DB(@NotNull String url, @NotNull String userpass) throws SQLException {
-        con = DriverManager.getConnection(
-            url,
-            userpass.split(":")[0], userpass.split(":")[1]
-        );
+    public DB(@NotNull String url, @NotNull String user, String pass) throws SQLException {
+        con = DriverManager.getConnection(url, user, pass);
     }
 
     public ResultSet query(@NotNull PreparedStatement qry) throws SQLException {

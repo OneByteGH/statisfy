@@ -1,11 +1,15 @@
 package io.github.onebytegh.statisfy;
 
+import io.github.onebytegh.statisfy.database.DB;
+import io.github.onebytegh.statisfy.database.DBUtil;
 import io.github.onebytegh.statisfy.misc.DiscordWebhook;
+import io.github.onebytegh.statisfy.router.LoginRouter;
 import io.javalin.Javalin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -13,6 +17,7 @@ public class Statisfy {
 
     public static Logger logger;
     public static String spotifyApiUrl;
+    public static DB db;
 
     public static String spotifySecret;
     public static String spotifyClientId;
@@ -32,11 +37,28 @@ public class Statisfy {
      * DBUSER:DBPASS
      */
     public static void main(String[] args) {
+
         //Logger Setup
         logger = LoggerFactory.getLogger(Statisfy.class);
 
-        spotifyApiUrl = "https://api.spotify.com/";
+        //DB Setup
+        try {
+            db = new DB(args[7], args[8], args[9]);
+        } catch (SQLException e) {
+            Statisfy.error("Error while connecting to db\n" + e);
+        } finally {
+            Statisfy.info("Connected to DB");
+        }
 
+        try {
+            DBUtil.setupDB();
+        } catch (SQLException e) {
+            Statisfy.error("Error while setting db up\n" + e);
+        } finally {
+            Statisfy.info("DB Setup Done");
+        }
+
+        spotifyApiUrl = "https://api.spotify.com/";
         spotifySecret = args[0];
         spotifyClientId = args[1];
         redirectUri = args[2];
@@ -62,6 +84,7 @@ public class Statisfy {
                 });
             });
 
+        //Logging Events
         app.events(event -> {
             event.serverStarted(() -> {
                 statusWebhook.setContent(":green_circle: Server started!");
@@ -77,25 +100,38 @@ public class Statisfy {
             });
         });
 
+        //Routers
+        app.get("/connect", LoginRouter::connect);
+        app.get("/loginUrl", LoginRouter::loginUrl);
+
 
         app.start(6969);
     }
 
-    public static void info(String msg) throws IOException {
+    public static void info(String msg) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
 
         logger.info(dtf.format(now) + " " + msg);
         infoWebhook.setContent(dtf.format(now) + " " + msg);
-        infoWebhook.execute();
+
+        try {
+            infoWebhook.execute();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static void error(String msg) throws IOException {
+    public static void error(String msg) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
 
         logger.error(dtf.format(now) + " " + msg);
         errorWebhook.setContent(dtf.format(now) + " " + msg);
-        errorWebhook.execute();
+        try {
+            errorWebhook.execute();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
