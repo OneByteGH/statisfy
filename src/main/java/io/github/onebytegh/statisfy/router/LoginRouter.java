@@ -1,20 +1,22 @@
 package io.github.onebytegh.statisfy.router;
 
+import com.mongodb.client.MongoCollection;
 import io.github.onebytegh.statisfy.Statisfy;
-import io.github.onebytegh.statisfy.database.SPConstants;
-import io.github.onebytegh.statisfy.http.HTTPClient;
+import io.github.onebytegh.statisfy.models.SimpleResponseModel;
+import io.github.onebytegh.statisfy.models.UserModel;
 import io.javalin.http.Context;
 import org.apache.hc.core5.http.ParseException;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.credentials.AuthorizationCodeCredentials;
+import se.michaelthelin.spotify.model_objects.specification.User;
 import se.michaelthelin.spotify.requests.authorization.authorization_code.AuthorizationCodeRequest;
+import se.michaelthelin.spotify.requests.data.users_profile.GetCurrentUsersProfileRequest;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.net.URI;
+import java.security.SecureRandom;
+import java.util.UUID;
 
 public class LoginRouter {
     /**
@@ -23,16 +25,17 @@ public class LoginRouter {
      *
      */
     public static void connect(Context ctx) {
-        HttpClient client = HTTPClient.getClient();
-
-        String accessToken = ctx.pathParam("code");
-        Statisfy.info(accessToken);
+        String code = ctx.queryParam("code");
+        Statisfy.info(code);
 
         SpotifyApi spotifyApi = new SpotifyApi.Builder()
-                .setAccessToken(accessToken)
+                .setAccessToken(code)
+                .setClientId(Statisfy.spotifyClientId)
+                .setClientSecret(Statisfy.spotifySecret)
+                .setRedirectUri(URI.create(Statisfy.redirectUri))
                 .build();
 
-        AuthorizationCodeRequest authorizationCodeRequest = spotifyApi.authorizationCode(accessToken)
+        AuthorizationCodeRequest authorizationCodeRequest = spotifyApi.authorizationCode(code)
                 .build();
 
         try {
@@ -42,22 +45,69 @@ public class LoginRouter {
             spotifyApi.setAccessToken(authCodeCreds.getAccessToken());
             spotifyApi.setRefreshToken(authCodeCreds.getRefreshToken());
 
-            try(PreparedStatement ps = Statisfy.db.createStatement(SPConstants.createUser)){
-                int result = Statisfy.db.update(ps);
-                if(result == 0) {
-                    Statisfy.info("0");
-                } else {
-                    Statisfy.info("1");
-                }
+            Statisfy.info("Received User Tokens: " + spotifyApi.getAccessToken() + " " + spotifyApi.getRefreshToken());
+            Statisfy.info("Getting other user info");
+
+            final GetCurrentUsersProfileRequest getCurrentUsersProfileRequest = spotifyApi.getCurrentUsersProfile()
+                    .build();
+
+            final User user = getCurrentUsersProfileRequest.execute();
+
+            Statisfy.info(user.toString());
+            //region storing user data
+
+            //generate a secure uuid
+            SecureRandom random = new SecureRandom();
+            byte[] bytes = new byte[20];
+            random.nextBytes(bytes);
+            UUID uuid = UUID.nameUUIDFromBytes(bytes);
+
+            String profilePic;
+            if(user.getImages().length > 0) {
+                profilePic = user.getImages()[0].getUrl();
+            } else {
+                profilePic = "";
             }
+
+            String rn = String.valueOf(System.currentTimeMillis());
+
+            UserModel dbUser = new UserModel(
+                uuid.toString(),
+                user.getDisplayName(),
+                user.getId(),
+                user.getEmail(),
+                user.getCountry().getAlpha3(),
+                profilePic,
+                user.getFollowers().getTotal(),
+                true,
+                user.getExternalUrls().get("spotify"),
+                user.getProduct().getType(),
+                spotifyApi.getAccessToken(),
+                spotifyApi.getRefreshToken(),
+                rn,
+                rn,
+                rn);
+
+            MongoCollection<UserModel> users = Statisfy.db.getCollection("users", UserModel.class);
+            users.insertOne(dbUser);
+
+            ctx.json(new SimpleResponseModel(false, "Successfully logged in!"));
 
         } catch (IOException | SpotifyWebApiException | ParseException e) {
             Statisfy.error("Error in connect API \n" + e);
-        } catch (SQLException e) {
-            Statisfy.error("SQL Error while creating user \n" + e);
+            ctx.json(new SimpleResponseModel(true, "We are currently having issues connecting with Spotify. This will be fixed soon, kindly let the devs know."));
         }
     }
 
+    public static void deleteAcc(Context ctx) {
+        if(ctx.header("Authorization") == null) {
+            ctx.json(new SimpleResponseModel(true, "You are not logged in!"));
+            return;
+        }
+
+        String token = ctx.header("Authorization");
+
+    }
 
     public static void loginUrl(Context ctx) {
         ctx.redirect(getLoginUrl());
