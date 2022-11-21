@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import static io.javalin.apibuilder.ApiBuilder.*;
 
 public class Statisfy {
 
@@ -80,8 +81,18 @@ public class Statisfy {
         });
 
         //Routers
-        app.get("/connect", LoginRouter::connect);
-        app.get("/loginUrl", LoginRouter::loginUrl);
+        app.routes(() -> {
+            get("/connect", LoginRouter::connect);
+            path("users", () -> {
+                get("/connect", LoginRouter::connect);
+                get("/loginUrl", LoginRouter::loginUrl);
+                delete("/delete", LoginRouter::deleteAcc);
+            });
+            path("leaderboard", () -> {
+
+            });
+        });
+
 
         app.start(6969);
     }

@@ -6,6 +6,7 @@ import io.github.onebytegh.statisfy.models.SimpleResponseModel;
 import io.github.onebytegh.statisfy.models.UserModel;
 import io.javalin.http.Context;
 import org.apache.hc.core5.http.ParseException;
+import org.bson.Document;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.credentials.AuthorizationCodeCredentials;
@@ -17,6 +18,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.SecureRandom;
 import java.util.UUID;
+
+import static com.mongodb.client.model.Filters.eq;
 
 public class LoginRouter {
     /**
@@ -105,8 +108,18 @@ public class LoginRouter {
             return;
         }
 
-        String token = ctx.header("Authorization");
+        String id = ctx.header("Authorization");
 
+        MongoCollection<Document> users = Statisfy.db.getCollection("users");
+        Document user = users.find(eq("_id", id)).first();
+        System.out.println(id);
+        System.out.println(user);
+        if(user != null) {
+            users.updateOne(eq("_id", id), new Document("$set", new Document("isActive", false)));
+            ctx.json(new SimpleResponseModel(false, "Successfully deleted account!"));
+        } else {
+            ctx.json(new SimpleResponseModel(true, "You are not logged in!"));
+        }
     }
 
     public static void loginUrl(Context ctx) {
